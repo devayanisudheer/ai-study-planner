@@ -3,8 +3,8 @@ extractor.py — Extract raw text from PDF, image, or plain text files.
 Uses pdfplumber for PDFs and EasyOCR (pure Python, no Tesseract needed) for images.
 """
 
-import os
 import io
+import re
 
 
 def extract_from_file(uploaded_file) -> str:
@@ -35,16 +35,17 @@ def _extract_text(data: bytes) -> str:
 def _extract_pdf(data: bytes) -> str:
     try:
         import pdfplumber
-        text_parts = []
+        pages_text = []
         with pdfplumber.open(io.BytesIO(data)) as pdf:
             for page in pdf.pages:
-                t = page.extract_text()
-                if t:
-                    text_parts.append(t)
-        text = "\n".join(text_parts).strip()
+                t = page.extract_text() or ""
+                pages_text.append(t)
+
+        start_index = _find_syllabus_start(pages_text)
+        text = "\n".join(pages_text[start_index:]).strip()
+
         if len(text) > 100:
             return text
-        # If very little text, it may be a scanned PDF — let user know
         raise RuntimeError(
             "This PDF appears to be scanned (image-only) and contains no selectable text.\n\n"
             "💡 Tip: Open the PDF, select all text (Ctrl+A), copy it, "
@@ -54,6 +55,79 @@ def _extract_pdf(data: bytes) -> str:
         raise
     except Exception as e:
         raise RuntimeError(f"PDF extraction failed: {e}")
+
+
+def _find_syllabus_start(pages_text: list) -> int:
+    """
+    Return the index of the page where the syllabus content begins.
+    Looks for headings and structural keywords common in academic syllabi.
+    Falls back to page 0 if nothing specific is found.
+    """
+    # Strong signals — a line that is clearly a syllabus section header
+    STRONG = re.compile(
+        r"""
+        ^\s*                        # start of line, optional whitespace
+        (
+            syllabus |
+            course\s*(outline|content|structure|details|description) |
+            curriculum |
+            unit\s*[-–—:]?\s*[1I] |    # Unit 1 / Unit I
+            module\s*[-–—:]?\s*[1I] |   # Module 1 / Module I
+            chapter\s*[-–—:]?\s*[1I] |
+            topics?\s*(covered|to\s+be\s+covered) |
+            subject\s*(content|outline) |
+            detailed\s*syllabus |
+            theory\s*syllabus |
+            part\s*[-–—:]?\s*[aA1I]
+        )
+        \b
+        """,
+        re.IGNORECASE | re.VERBOSE | re.MULTILINE,
+    )
+
+    # Weaker signals — general academic content markers
+    WEAK = re.compile(
+        r"""
+        ^\s*
+        (
+            unit\s*[-–—:]?\s*\d+ |
+            module\s*[-–—:]?\s*\d+ |
+            chapter\s*[-–—:]?\s*\d+ |
+            lecture\s*[-–—:]?\s*\d+ |
+            section\s*[-–—:]?\s*\d+
+        )
+        \b
+        """,
+        re.IGNORECASE | re.VERBOSE | re.MULTILINE,
+    )
+
+    # Skip obvious non-syllabus pages: title/cover, TOC, acknowledgements, etc.
+    SKIP = re.compile(
+        r"table\s+of\s+contents|acknowledgement|preface|foreword|"
+        r"certificate|declaration|dedication|index\s*$|^\s*page\s+\d",
+        re.IGNORECASE,
+    )
+
+    best_strong = None
+    best_weak = None
+
+    for i, text in enumerate(pages_text):
+        if not text.strip():
+            continue
+        if SKIP.search(text) and i < 5:
+            continue
+        if STRONG.search(text):
+            if best_strong is None:
+                best_strong = i
+        elif WEAK.search(text):
+            if best_weak is None:
+                best_weak = i
+
+    if best_strong is not None:
+        return best_strong
+    if best_weak is not None:
+        return best_weak
+    return 0   # fallback: use entire document
 
 
 def _extract_image(data: bytes) -> str:
