@@ -318,12 +318,12 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="step-card">', unsafe_allow_html=True)
 st.markdown('<div class="badge badge-1">📁 Step 1 · Upload Syllabus</div>', unsafe_allow_html=True)
-st.markdown('<p class="card-title">Upload your syllabus as a <b>PDF, image (JPG/PNG)</b>, or <b>plain text file</b> — or paste the text directly.</p>', unsafe_allow_html=True)
+st.markdown('<p class="card-title">Upload your syllabus as a <b>PDF</b> or <b>plain text file</b> — or paste the text directly.</p>', unsafe_allow_html=True)
 
 col_up, col_paste = st.columns(2, gap="large")
 
 with col_up:
-    uploaded = st.file_uploader("Drop file here", type=["pdf","png","jpg","jpeg","txt","webp"], label_visibility="collapsed")
+    uploaded = st.file_uploader("Drop file here", type=["pdf","txt"], label_visibility="collapsed")
     if uploaded and st.button("Extract text from file", use_container_width=True):
         with st.spinner("Reading your syllabus…"):
             try:
