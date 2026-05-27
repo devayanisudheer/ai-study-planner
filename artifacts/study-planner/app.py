@@ -513,56 +513,19 @@ if st.session_state.get("plan"):
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("#### 📄 Download your plan")
-
-    dl1, dl2 = st.columns(2, gap="small")
-
-    with dl1:
-        try:
-            from pdf_export import generate_pdf
-            pdf_bytes = generate_pdf(
-                plan=plan,
-                subject=st.session_state.get("subject", "University Exam"),
-                exam_date=st.session_state.get("exam_date", date.today()),
-            )
-            st.download_button(
-                "⬇️ Download as PDF", data=pdf_bytes,
-                file_name=f"study_plan_{st.session_state.get('subject','exam').replace(' ','_')}.pdf",
-                mime="application/pdf", use_container_width=True, type="primary",
-            )
-        except Exception as e:
-            st.error(f"PDF export failed: {e}")
-
-    with dl2:
-        subject_label = st.session_state.get("subject", "University Exam")
-        exam_label    = str(st.session_state.get("exam_date", date.today()))
-        lines = [
-            f"📚 STUDY PLAN — {subject_label}",
-            f"Exam date: {exam_label}",
-            f"Generated: {date.today()}",
-            "=" * 44,
-            "",
-        ]
-        for day in plan:
-            dtype = day.get("type", "study")
-            tag   = {"study": "📘 Study", "revision": "🔄 Revision", "buffer": "🎯 Exam Day"}.get(dtype, "📘")
-            lines.append(f"{day.get('day','')}, {day.get('date','')}  |  {tag}  |  {day.get('hours',0)}h")
-            for t in day.get("topics", []):
-                lines.append(f"   • {t}")
-            lines.append("")
-        plan_text = "\n".join(lines)
-        st.download_button(
-            "⬇️ Download as Text", data=plan_text.encode(),
-            file_name=f"study_plan_{subject_label.replace(' ','_')}.txt",
-            mime="text/plain", use_container_width=True,
+    try:
+        from pdf_export import generate_pdf
+        pdf_bytes = generate_pdf(
+            plan=plan,
+            subject=st.session_state.get("subject", "University Exam"),
+            exam_date=st.session_state.get("exam_date", date.today()),
         )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("#### 📋 Copy & share")
-    st.text_area(
-        "Share your plan", value=plan_text,
-        height=220, label_visibility="collapsed",
-        help="Select all (Ctrl+A) and copy to paste into WhatsApp, email, or anywhere else.",
-    )
-    st.caption("Select all text above (Ctrl+A / Cmd+A) and copy to share via WhatsApp, email, or messages.")
+        st.download_button(
+            "⬇️ Download as PDF", data=pdf_bytes,
+            file_name=f"study_plan_{st.session_state.get('subject','exam').replace(' ','_')}.pdf",
+            mime="application/pdf", use_container_width=True, type="primary",
+        )
+    except Exception as e:
+        st.error(f"PDF export failed: {e}")
 
     st.markdown('</div>', unsafe_allow_html=True)
