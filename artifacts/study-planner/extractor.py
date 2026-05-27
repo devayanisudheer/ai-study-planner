@@ -44,31 +44,20 @@ def _extract_pdf(data: bytes) -> str:
         text = "\n".join(text_parts).strip()
         if len(text) > 100:
             return text
-        # If very little text, fall through to image OCR on PDF pages
-        return _extract_pdf_as_images(data)
+        # If very little text, it may be a scanned PDF — let user know
+        raise RuntimeError(
+            "This PDF appears to be scanned (image-only) and contains no selectable text.\n\n"
+            "💡 Tip: Open the PDF, select all text (Ctrl+A), copy it, "
+            "then paste into the text box on the right."
+        )
+    except RuntimeError:
+        raise
     except Exception as e:
         raise RuntimeError(f"PDF extraction failed: {e}")
 
 
-def _extract_pdf_as_images(data: bytes) -> str:
-    """Render PDF pages as images and OCR them (for scanned PDFs)."""
-    try:
-        import fitz  # PyMuPDF
-        doc = fitz.open(stream=data, filetype="pdf")
-        all_text = []
-        for page in doc:
-            pix = page.get_pixmap(dpi=200)
-            img_bytes = pix.tobytes("png")
-            text = _extract_image(img_bytes)
-            if text:
-                all_text.append(text)
-        return "\n".join(all_text)
-    except Exception as e:
-        raise RuntimeError(f"Scanned PDF OCR failed: {e}")
-
-
 def _extract_image(data: bytes) -> str:
-    """Use EasyOCR (pure Python) — no Tesseract installation needed."""
+    """Use EasyOCR if available; otherwise show a friendly fallback message."""
     try:
         import easyocr
         import numpy as np
@@ -82,7 +71,9 @@ def _extract_image(data: bytes) -> str:
         return "\n".join(results)
     except ImportError:
         raise RuntimeError(
-            "EasyOCR is not installed. Run: pip install easyocr"
+            "Image OCR is not available in this environment.\n\n"
+            "💡 Tip: Open the image, copy the text manually, "
+            "then paste it into the text box on the right — that works perfectly!"
         )
     except Exception as e:
         raise RuntimeError(f"Image OCR failed: {e}")
