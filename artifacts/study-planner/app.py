@@ -3,6 +3,7 @@ app.py — AI-Powered Personalized Study Planner
 Rainbow UI, full dark/light mode support.
 """
 
+import os
 import streamlit as st
 from datetime import date, timedelta
 
@@ -302,8 +303,11 @@ with st.sidebar:
     hours_per_day = st.slider("Study hours per day", 1, 12, 3, key="hours")
     st.markdown("---")
     st.markdown("### 🤖 AI *(optional)*")
-    api_key      = st.text_input("Gemini API key", type="password", key="gemini_key",
-                                  help="Leave blank — built-in planner still works great.")
+    _env_key = os.environ.get("GEMINI_API_KEY", "")
+    if "gemini_key" not in st.session_state:
+        st.session_state["gemini_key"] = _env_key
+    api_key = st.text_input("Gemini API key", type="password", key="gemini_key",
+                             help="Pre-filled from GEMINI_API_KEY env var if set. Leave blank — built-in planner still works great.")
     gemini_model = st.selectbox("Model", ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"], key="model")
     st.caption("No API key needed for a good plan.")
     st.markdown("---")
