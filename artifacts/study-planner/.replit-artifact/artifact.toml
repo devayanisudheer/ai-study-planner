@@ -1,0 +1,22 @@
+kind = "web"
+previewPath = "/"
+title = "AI Study Planner"
+version = "1.0.0"
+id = "artifacts/study-planner"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18986
+
+[services.development]
+run = "streamlit run /home/runner/workspace/artifacts/study-planner/app.py --server.port 18986 --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableXsrfProtection false"
+
+[services.env]
+PORT = "18986"
+BASE_PATH = "/"
