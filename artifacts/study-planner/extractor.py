@@ -137,7 +137,7 @@ def _is_textbook_page(text: str) -> bool:
     rather than a syllabus outline (short topic lines).
     """
     lines = [l for l in text.splitlines() if l.strip()]
-    if len(lines) < 4:
+    if len(lines) < 3:
         return False
 
     word_counts = [len(l.split()) for l in lines]
@@ -146,31 +146,44 @@ def _is_textbook_page(text: str) -> bool:
     # Lines that read like prose sentences
     sentence_lines = sum(
         1 for l in lines
-        if l.rstrip().endswith((".", "?", "!")) and len(l.split()) > 8
+        if l.rstrip().endswith((".", "?", "!")) and len(l.split()) > 6
     )
     prose_ratio = sentence_lines / len(lines)
 
     # Long-line ratio — textbook paragraphs have many long lines
-    long_lines = sum(1 for w in word_counts if w > 14)
+    long_lines = sum(1 for w in word_counts if w > 10)
     long_ratio = long_lines / len(lines)
 
     # Textbook prose markers
     PROSE_MARKERS = re.compile(
         r"\b(therefore|however|thus|hence|moreover|furthermore|"
         r"in\s+this\s+(chapter|section|unit)|as\s+shown\s+in|"
-        r"figure\s+\d|table\s+\d|example\s+\d|definition\s*:|"
-        r"theorem\s*:|proof\s*:|note\s*:|refers?\s+to|"
-        r"is\s+defined\s+as|can\s+be\s+(written|expressed|shown))\b",
+        r"figure\s+\d|table\s+\d|example\s+\d|definition\s*[:\-]|"
+        r"theorem\s*[:\-]|proof\s*[:\-]|refers?\s+to|introduction\s+to|"
+        r"is\s+defined\s+as|can\s+be\s+(written|expressed|shown)|"
+        r"we\s+(can|have|know|see|note)|let\s+us|consider\s+the)\b",
         re.IGNORECASE,
     )
     prose_marker_hits = len(PROSE_MARKERS.findall(text))
 
-    # Decide: high average word count + high prose ratio → textbook
-    if avg_words > 13 and prose_ratio > 0.35:
+    # Paragraph blocks: 3+ consecutive long lines = prose paragraph
+    paragraph_blocks = 0
+    run = 0
+    for wc in word_counts:
+        if wc > 9:
+            run += 1
+            if run >= 3:
+                paragraph_blocks += 1
+        else:
+            run = 0
+
+    if avg_words > 10 and prose_ratio > 0.25:
         return True
-    if long_ratio > 0.45 and prose_marker_hits >= 2:
+    if long_ratio > 0.35 and prose_marker_hits >= 1:
         return True
-    if prose_marker_hits >= 4:
+    if prose_marker_hits >= 3:
+        return True
+    if paragraph_blocks >= 2:
         return True
 
     return False
@@ -179,27 +192,16 @@ def _is_textbook_page(text: str) -> bool:
 def _find_syllabus_end(pages_text: list, start: int) -> int:
     """
     Return the index (exclusive) where syllabus content ends.
-    Stops as soon as we hit consecutive textbook-body pages.
-    Ensures we always include at least a few pages after start.
+    Stops at the very first textbook body page encountered,
+    ensuring we never include explanatory/prose content.
     """
-    MIN_SYLLABUS_PAGES = 2   # always include at least this many pages
-    CONSECUTIVE_PROSE_LIMIT = 2  # stop after this many consecutive prose pages
+    MIN_SYLLABUS_PAGES = 2  # always include at least 2 pages after start
 
-    consecutive_prose = 0
-    end = len(pages_text)
-
-    for i in range(start, len(pages_text)):
-        if i < start + MIN_SYLLABUS_PAGES:
-            continue
+    for i in range(start + MIN_SYLLABUS_PAGES, len(pages_text)):
         if _is_textbook_page(pages_text[i]):
-            consecutive_prose += 1
-            if consecutive_prose >= CONSECUTIVE_PROSE_LIMIT:
-                end = i - (CONSECUTIVE_PROSE_LIMIT - 1)
-                break
-        else:
-            consecutive_prose = 0
+            return i  # stop here — exclude this page and everything after
 
-    return end
+    return len(pages_text)  # no textbook page found, use all remaining pages
 
 
 def _extract_image(data: bytes) -> str:
