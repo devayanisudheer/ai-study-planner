@@ -1,0 +1,28 @@
+Module-1 (Mobile Computing Architecture) 
+Introduction to mobile computing – Functions, Devices, Middleware and gateways, 
+Applications and services, Limitations. Mobile computing architecture – Internet: The 
+ubiquitous network, Three-tier architecture, Design considerations for mobile computing. 
+Module-2 (Communication Systems) 
+Mobile computing through telephony - Evolution of telephony, Multiple access 
+procedures - Frequency Division Multiple Access (FDMA), Time Division Multiple 
+Access (TDMA), Code Division Multiple Access (CDMA), Space Division Multiple 
+Access (SDMA). Satellite communication systems – Basics, Applications, Geostationary 
+Earth Orbit (GEO), Low Earth Orbit (LEO), Medium Earth Orbit (MEO), Satellite 
+phones. Mobile computing through telephone – Interactive Voice Response (IVR) 
+architecture, Overview of voice software, Developing an IVR application. Global System 
+for Mobile Communication (GSM) - Introduction, Architecture, Entities, Call routing, 
+Mobility management, Frequency allocation, Authentication and security. 
+Module-3 (Short Messaging Service and General Packet Radio Service) 
+Short Message Service (SMS) – Strengths, Architecture, Value added services, Accessing 
+the SMS bearer. General Packet Radio Service (GPRS) – Architecture, Network 
+operations, Data services, Applications, Limitations, Billing and charging.  
+Module-4 (Wireless Local Area Networks) 
+Wireless Local Area Network (WLAN) - Advantages, Evolution, Applications, 
+Architecture, Mobility, Security, Deploying WLAN. Wireless Local Loop (WLL) – 
+Architecture. High Performance Radio Local Area Network (HIPERLAN). WiFi Vs 3G.  
+Module-5 (Mobile Security and Next Generation Networks) 
+Security issues in mobile computing - Information security, Security techniques and 
+algorithms, Security protocols. Next generation networks – The Converged Scenario, 
+Narrowband to broadband, Orthogonal Frequency Division Multiplexing (OFDM), Multi 
+Protocol Label Switching (MPLS), Wireless Asynchronous Transfer Mode (WATM), 
+Multimedia broadcast services.  

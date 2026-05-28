@@ -8,7 +8,7 @@ import re
 import os
 
 
-def extract_topics(raw_text: str, api_key: str = "", model: str = "gemini-1.5-flash", max_topics: int = 80) -> list[str]:
+def extract_topics(raw_text: str, api_key: str = "", model: str = "gemini-1.5-flash", max_topics: int = 120) -> list[str]:
     text = _fix_ocr(raw_text)
     heuristic = _heuristic_extract(text, max_topics)
 
@@ -54,8 +54,6 @@ def _fix_ocr(text: str) -> str:
         r'\bRecognrtion\b':   'Recognition',
         r'\bSpecificahon\b':  'Specification',
         r'\bSpeclfication\b': 'Specification',
-        r'\bAnalyser\b':      'Analyser',
-        r'\bAnalyzer\b':      'Analyzer',
         r'\bSyntax\s+crror\b':    'Syntax error',
         r'\bSyntax\s+enor\b':     'Syntax error',
         r'\bhandlng\b':           'handling',
@@ -156,23 +154,25 @@ def _fix_ocr(text: str) -> str:
 
 # Heuristic extractor
 
-# Module/unit header prefix: "Module -1", "Unit 3:", "Chapter II", etc.
+# Module/unit header prefix: "Module-1", "Module -1 (Title)", "Unit 3:", etc.
+# Also strips optional parenthesized title like "(Mobile Computing Architecture)"
 _MODULE_PREFIX = re.compile(
-    r'\b(?:Module|Unit|Chapter|Section|Part)\s*[-\u2013]?\s*\d+[IVX]*\s*[:\-]?\s*',
+    r'\b(?:Module|Unit|Chapter|Section|Part)\s*[-\u2013]?\s*\d+[IVX]*\s*[:\-]?\s*'
+    r'(?:\([^)]+\)\s*)?',
     re.IGNORECASE,
 )
 
-# ALL-CAPS module title following the header prefix
-# e.g. "INTRODUCTION TO CLOUD COMPUTING" — strip it, keep what follows
+# ALL-CAPS module title immediately following the header prefix
+# e.g. "INTRODUCTION TO CLOUD COMPUTING" before the first real topic word
 _CAPS_TITLE = re.compile(
     r'^[A-Z][A-Z\s\d&,/()\-]+(?=\s+[A-Za-z][a-z]|\s*$)'
 )
 
-# Topic separators (in priority order):
-#   en-dash / em-dash:           "Topic A \u2013 Topic B"
-#   space-hyphen-Capital:        "Management -Word Processing"
-#   space-hyphen-space:          "Topic A - Topic B"
-#   word-hyphen-space-Capital:   "computing- Limitations"
+# Primary topic separators:
+#   en-dash / em-dash:            "Topic A \u2013 Topic B"
+#   space-hyphen-Capital:         "Management -Word Processing"
+#   space-hyphen-space:           "Topic A - Topic B"
+#   word-hyphen-space-Capital:    "computing- Limitations"
 _SEPARATOR = re.compile(
     r'\s*[\u2013\u2014]\s*'
     r'|\s+-(?=[A-Z])'
@@ -186,7 +186,7 @@ def _heuristic_extract(text: str, max_topics: int) -> list[str]:
     text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
     text = re.sub(r' {2,}', ' ', text)
 
-    # 2. Split on dash separators to get individual raw topic tokens
+    # 2. Split on primary dash separators to get topic groups
     parts = _SEPARATOR.split(text)
 
     topics = []
@@ -195,29 +195,34 @@ def _heuristic_extract(text: str, max_topics: int) -> list[str]:
         if not raw:
             continue
 
-        # Strip module/unit header prefix ("Module -1", "Unit 3:", ...)
+        # Strip module/unit header prefix + optional parenthesized title
         raw = _MODULE_PREFIX.sub('', raw).strip()
 
-        # Strip leading ALL-CAPS module title that follows the header
-        # "INTRODUCTION TO CLOUD COMPUTING Traditional computing"
-        # -> "Traditional computing"
+        # Strip leading ALL-CAPS module title (e.g. "INTRODUCTION TO CLOUD COMPUTING")
         raw = _CAPS_TITLE.sub('', raw).strip()
 
         # Skip if entire chunk is still an ALL-CAPS label (module title)
         if re.match(r'^[A-Z0-9\s&,/()\-]+$', raw) and len(raw.split()) <= 8:
             continue
 
-        # A chunk may contain two topics joined by ". Capital" (sentence end)
-        subs = re.split(r'(?<=[.!?])\s+(?=[A-Z])', raw)
-        for s in subs:
-            s = s.strip().strip('.-,;: ')
-            if not s:
+        # 3. Split on sentence boundaries (". Capital" = new main topic)
+        sentence_parts = re.split(r'(?<=[.!?])\s+(?=[A-Z])', raw)
+
+        for sp in sentence_parts:
+            sp = sp.strip().strip('.-,;: ')
+            if not sp or _MODULE_PREFIX.match(sp):
                 continue
-            if _MODULE_PREFIX.match(s):
-                continue
-            t = _clean(s)
-            if _is_valid(t):
-                topics.append(t)
+
+            # 4. Split on commas — these are secondary topic separators
+            #    e.g. "Functions, Devices, Middleware and gateways" → 3 topics
+            comma_parts = [c.strip().strip('.-;: ') for c in sp.split(',')]
+
+            for cp in comma_parts:
+                if not cp:
+                    continue
+                t = _clean(cp)
+                if _is_valid(t):
+                    topics.append(t)
 
     return _dedup(topics)
 
@@ -229,11 +234,14 @@ def _clean(s: str) -> str:
 
 
 def _is_valid(t: str) -> bool:
-    if len(t) < 5 or len(t) > 120:
+    if len(t) > 120:
         return False
     if re.match(r'^\d+$', t):
         return False
-    if len(t.split()) < 1:
+    # Allow short abbreviations like FDMA, IaaS, OFDM (3-5 chars, letter-only)
+    if re.match(r'^[A-Za-z]{3,5}$', t):
+        return len(t) >= 3
+    if len(t) < 5:
         return False
     return True
 
@@ -242,7 +250,7 @@ def _dedup(topics: list[str]) -> list[str]:
     seen, result = set(), []
     for t in topics:
         key = t.lower().strip()
-        if key not in seen and len(key) > 3:
+        if key not in seen and len(key) > 2:
             seen.add(key)
             result.append(t)
     return result
