@@ -23,24 +23,21 @@ def extract_topics(raw_text: str, api_key: str = "", model: str = "gemini-1.5-fl
     return heuristic[:max_topics]
 
 
-# ── OCR fixer ─────────────────────────────────────────────────────────────────
+# OCR fixer
 
 def _fix_ocr(text: str) -> str:
     """Fix common OCR errors in BTech/degree syllabi."""
 
-    # Character-level OCR swaps (very common)
     char_fixes = [
-        (r'\brn\b',   'm'),        # rn → m
-        (r'\bvv\b',   'w'),        # vv → w
-        (r'(?<=[a-z])1(?=[a-z])', 'l'),  # digit 1 inside word → l
-        (r'(?<=[a-z])0(?=[a-z])', 'o'),  # digit 0 inside word → o
+        (r'\brn\b',   'm'),
+        (r'\bvv\b',   'w'),
+        (r'(?<=[a-z])1(?=[a-z])', 'l'),
+        (r'(?<=[a-z])0(?=[a-z])', 'o'),
     ]
     for pat, rep in char_fixes:
         text = re.sub(pat, rep, text)
 
-    # Word-level fixes (common in scanned BTech syllabi)
     word_fixes = {
-        # Module / lexical analysis
         r'\bbexical\b':       'lexical',
         r'\blexlcal\b':       'lexical',
         r'\bLexlcal\b':       'Lexical',
@@ -59,54 +56,36 @@ def _fix_ocr(text: str) -> str:
         r'\bSpeclfication\b': 'Specification',
         r'\bAnalyser\b':      'Analyser',
         r'\bAnalyzer\b':      'Analyzer',
-
-        # Syntax analysis
         r'\bSyntax\s+crror\b':    'Syntax error',
         r'\bSyntax\s+enor\b':     'Syntax error',
         r'\bhandlng\b':           'handling',
         r'\bhandllng\b':          'handling',
         r'\bGrammers\b':          'Grammars',
         r'\bGramrners\b':         'Grammars',
-        r'\bGrammars\b':          'Grammars',
         r'\bDerivahon\b':         'Derivation',
         r'\bDenvation\b':         'Derivation',
-        r'\bEliminating\b':       'Eliminating',
         r'\bEhminahag\b':         'Eliminating',
         r'\bEliminaling\b':       'Eliminating',
-        r'\bAmbiguity\b':         'Ambiguity',
         r'\bAmblguity\b':         'Ambiguity',
-        r'\brecursion\b':         'recursion',
         r'\brecurslon\b':         'recursion',
         r'\bfactonng\b':          'factoring',
         r'\bfactorlng\b':         'factoring',
-        r'\bParsing\b':           'Parsing',
         r'\bParslng\b':           'Parsing',
         r'\bPredictlve\b':        'Predictive',
-        r'\bPredictive\b':        'Predictive',
-        r'\bRecursive\b':         'Recursive',
         r'\bRecurslve\b':         'Recursive',
-        r'\bDescent\b':           'Descent',
         r'\bDescenl\b':           'Descent',
-
-        # Bottom-up parsing
         r'\bPrunlng\b':           'Pruning',
-        r'\bprecedence\b':        'precedence',
         r'\bprecedenee\b':        'precedence',
         r'\bConstructlng\b':      'Constructing',
-        r'\bcanonical\b':         'canonical',
         r'\bcanonlcal\b':         'canonical',
-
-        # Syntax directed / intermediate code
         r'\btranslahon\b':        'translation',
         r'\btranslatlon\b':       'translation',
-        r'\bdefinitions\b':       'definitions',
         r'\bdefinthons\b':        'definitions',
         r'\bdefinithons\b':       'definitions',
         r'\battnbuted\b':         'attributed',
         r'\battrlbuted\b':        'attributed',
         r'\bevaluahon\b':         'evaluation',
         r'\bevaluatlon\b':        'evaluation',
-        r'\bEnvironments\b':      'Environments',
         r'\bEavlronments\b':      'Environments',
         r'\bEavlronrnents\b':     'Environments',
         r'\bIsSuCS\b':            'Issues',
@@ -115,49 +94,26 @@ def _fix_ocr(text: str) -> str:
         r'\borganisahon\b':       'organization',
         r'\ballocaton\b':         'allocation',
         r'\ballocatlon\b':        'allocation',
-        r'\bstrategies\b':        'strategies',
         r'\bstrategles\b':        'strategies',
         r'\bstratcgics\b':        'strategies',
-        r'\bGeneration\b':        'Generation',
         r'\bGencration\b':        'Generation',
         r'\bGeneratlon\b':        'Generation',
-        r'\bIntermediate\b':      'Intermediate',
         r'\blntermediate\b':      'Intermediate',
         r'\blatermediate\b':      'Intermediate',
-        r'\bQuadruples\b':        'Quadruples',
         r'\bQuadruoles\b':        'Quadruples',
-        r'\bTriples\b':           'Triples',
         r'\bTrlples\b':           'Triples',
-        r'\bGraphical\b':         'Graphical',
         r'\bGraphlcal\b':         'Graphical',
-        r'\brepresentations\b':   'representations',
         r'\brepresentatlons\b':   'representations',
-        r'\bThree-Address\b':     'Three-Address',
         r'\bThree\s*-\s*Adress\b': 'Three-Address',
-
-        # Code optimization / generation
-        r'\bOptimization\b':      'Optimization',
         r'\bOptimizahon\b':       'Optimization',
         r'\bOptlmization\b':      'Optimization',
         r'\bOptmizahon\b':        'Optimization',
-        r'\boptimization\b':      'optimization',
         r'\boptlmization\b':      'optimization',
-        r'\bPrincipal\b':         'Principal',
         r'\bPnacipal\b':          'Principal',
         r'\bPrlncipal\b':         'Principal',
-        r'\bindependent\b':       'independent',
         r'\bindependenl\b':       'independent',
-        r'\bgenerator\b':         'generator',
         r'\bgeneralor\b':         'generator',
-        r'\bTarget\b':            'Target',
         r'\bTargel\b':            'Target',
-        r'\bLanguage\b':          'Language',
-        r'\bLanguage\b':          'Language',
-        r'\bsimple\b':            'simple',
-        r'\bslmple\b':            'simple',
-        r'\bumple\b':             'simple',
-
-        # General academic words
         r'\bSvatax\b':            'Syntax',
         r'\bSvntax\b':            'Syntax',
         r'\bCCCA\b':              '',
@@ -166,104 +122,102 @@ def _fix_ocr(text: str) -> str:
         r'\bAnalysls\b':          'Analysis',
         r'\bCompller\b':          'Compiler',
         r'\bcompller\b':          'compiler',
-        r'\bPhases\b':            'Phases',
-        r'\bPhase\b':             'Phase',
         r'\bsynthesls\b':         'synthesis',
         r'\bSynthesls\b':         'Synthesis',
-        r'\bsource\b':            'source',
         r'\bsouree\b':            'source',
-        r'\bprogram\b':           'program',
         r'\bprogam\b':            'program',
-        r'\btranslation\b':       'translation',
-        r'\btranslatlon\b':       'translation',
-        r'\bcode\b':              'code',
         r'\bcodo\b':              'code',
-        r'\bParse\b':             'Parse',
-        r'\bParse\b':             'Parse',
-        r'\bTrees\b':             'Trees',
-        r'\bTree\b':              'Tree',
-        r'\bToken\b':             'Token',
-        r'\bTokens\b':            'Tokens',
-        r'\bInput\b':             'Input',
-        r'\blnput\b':             'Input',
-        r'\bRole\b':              'Role',
         r'\bRoie\b':              'Role',
-        r'\bContext\b':           'Context',
-        r'\bFree\b':              'Free',
-        r'\bShift\b':             'Shift',
         r'\bShifl\b':             'Shift',
-        r'\bReduce\b':            'Reduce',
         r'\bReduco\b':            'Reduce',
-        r'\bOperator\b':          'Operator',
         r'\bOperalor\b':          'Operator',
-        r'\bBottom\b':            'Bottom',
         r'\bBollom\b':            'Bottom',
-        r'\bHandle\b':            'Handle',
         r'\bHandie\b':            'Handle',
-        r'\bRun-Time\b':          'Run-Time',
         r'\bRun\s*-\s*Timc\b':   'Run-Time',
-        r'\bSource\b':            'Source',
         r'\bSouree\b':            'Source',
-        r'\bStorage\b':           'Storage',
         r'\bStorago\b':           'Storage',
-        r'\bLocal\b':             'Local',
         r'\bLocai\b':             'Local',
-        r'\bGlobal\b':            'Global',
         r'\bGlobai\b':            'Global',
-        r'\bMachine\b':           'Machine',
         r'\bMachlne\b':           'Machine',
-        r'\bDependent\b':         'Dependent',
         r'\bDependenl\b':         'Dependent',
-        r'\bdesign\b':            'design',
         r'\bdesiqn\b':            'design',
-        r'\bIssues\b':            'Issues',
         r'\blssues\b':            'Issues',
+        r'\blnput\b':             'Input',
     }
 
     for pat, rep in word_fixes.items():
         text = re.sub(pat, rep, text, flags=re.IGNORECASE if pat[0] != '(' else 0)
 
-    # Clean up double spaces
     text = re.sub(r'  +', ' ', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
 
     return text
 
 
-# ── Heuristic extractor ───────────────────────────────────────────────────────
+# Heuristic extractor
+
+# Module/unit header prefix: "Module -1", "Unit 3:", "Chapter II", etc.
+_MODULE_PREFIX = re.compile(
+    r'\b(?:Module|Unit|Chapter|Section|Part)\s*[-\u2013]?\s*\d+[IVX]*\s*[:\-]?\s*',
+    re.IGNORECASE,
+)
+
+# ALL-CAPS module title following the header prefix
+# e.g. "INTRODUCTION TO CLOUD COMPUTING" — strip it, keep what follows
+_CAPS_TITLE = re.compile(
+    r'^[A-Z][A-Z\s\d&,/()\-]+(?=\s+[A-Za-z][a-z]|\s*$)'
+)
+
+# Topic separators (in priority order):
+#   en-dash / em-dash:           "Topic A \u2013 Topic B"
+#   space-hyphen-Capital:        "Management -Word Processing"
+#   space-hyphen-space:          "Topic A - Topic B"
+#   word-hyphen-space-Capital:   "computing- Limitations"
+_SEPARATOR = re.compile(
+    r'\s*[\u2013\u2014]\s*'
+    r'|\s+-(?=[A-Z])'
+    r'|\s+-\s+'
+    r'|(?<=\w)-\s+(?=[A-Z])',
+)
+
 
 def _heuristic_extract(text: str, max_topics: int) -> list[str]:
+    # 1. Join soft line-wraps so wrapped topics become single strings
+    text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+    text = re.sub(r' {2,}', ' ', text)
+
+    # 2. Split on dash separators to get individual raw topic tokens
+    parts = _SEPARATOR.split(text)
+
     topics = []
-
-    # Normalize separators to newlines for uniform processing
-    normalized = text
-    normalized = re.sub(r'[;_]', '\n', normalized)
-    normalized = re.sub(r'\.\s+(?=[A-Z])', '\n', normalized)
-    normalized = re.sub(r',\s*', '\n', normalized)
-
-    lines = normalized.splitlines()
-
-    for line in lines:
-        line = line.strip()
-        if not line or len(line) < 4:
-            continue
-        # Skip pure module headers without content
-        if re.match(r'^(syllabus|module|unit|chapter|section|part)\s*[-–—\d]*$', line, re.IGNORECASE):
-            continue
-        if re.match(r'^\d+$', line):
-            continue
-        if len(line) > 120:
+    for raw in parts:
+        raw = raw.strip()
+        if not raw:
             continue
 
-        t = _clean(line)
-        if _is_valid(t):
-            topics.append(t)
+        # Strip module/unit header prefix ("Module -1", "Unit 3:", ...)
+        raw = _MODULE_PREFIX.sub('', raw).strip()
 
-    # Also extract module header titles from parentheses
-    for match in re.finditer(r'\(([^)]{10,80})\)', text, re.IGNORECASE):
-        t = _clean(match.group(1))
-        if _is_valid(t):
-            topics.append(t)
+        # Strip leading ALL-CAPS module title that follows the header
+        # "INTRODUCTION TO CLOUD COMPUTING Traditional computing"
+        # -> "Traditional computing"
+        raw = _CAPS_TITLE.sub('', raw).strip()
+
+        # Skip if entire chunk is still an ALL-CAPS label (module title)
+        if re.match(r'^[A-Z0-9\s&,/()\-]+$', raw) and len(raw.split()) <= 8:
+            continue
+
+        # A chunk may contain two topics joined by ". Capital" (sentence end)
+        subs = re.split(r'(?<=[.!?])\s+(?=[A-Z])', raw)
+        for s in subs:
+            s = s.strip().strip('.-,;: ')
+            if not s:
+                continue
+            if _MODULE_PREFIX.match(s):
+                continue
+            t = _clean(s)
+            if _is_valid(t):
+                topics.append(t)
 
     return _dedup(topics)
 
@@ -304,7 +258,7 @@ def _merge(a: list[str], b: list[str]) -> list[str]:
     return combined
 
 
-# ── LLM extractor ─────────────────────────────────────────────────────────────
+# LLM extractor
 
 def _llm_extract(text: str, api_key: str, model: str, max_topics: int) -> list[str]:
     import google.generativeai as genai
