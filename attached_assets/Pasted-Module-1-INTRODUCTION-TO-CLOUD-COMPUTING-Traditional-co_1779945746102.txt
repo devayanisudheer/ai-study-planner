@@ -1,0 +1,31 @@
+Module -1 INTRODUCTION TO CLOUD COMPUTING 
+Traditional computing- Limitations. System Models for Distributed and Cloud 
+Computing – Software Environments for Distributed Systems and Clouds – Cloud 
+Computing and Service Models – Public – Private – Hybrid Clouds – Infrastructure-as-a
+Service (IaaS) – Platform-as-a-Service (PaaS) - Software-as-a-Service (SaaS)-Different 
+Service Providers.  
+Module -2 INTRODUCTION TO VIRTUALIZATION 
+Virtual Machines and Virtualization Middleware – Data Center Virtualization for Cloud 
+Computing – Implementation Levels of Virtualization – Virtualization Structures/Tools 
+and Mechanisms – Virtualization of CPU – Memory – I/O Devices 
+Module -3 CLOUD ARCHITECTURE AND RESOURCE MANAGEMENT 
+Architectural Design of Compute and Storage Clouds – Public Cloud Platforms: GAE – 
+AWS – Azure-Emerging Cloud Software Environments – Eucalyptus- Nimbus – Open 
+Stack – Extended Cloud Computing Services – Resource Provisioning and Platform 
+Deployment – Virtual Machine Creation and Management 
+Module -4 CLOUD PROGRAMMING AND CLOUD SERVICES 
+COMPUTER SCIENCE AND ENGINEERING (DATA SCIENCE) 
+Parallel Computing and Programming Paradigms – Map Reduce – Twister –Hadoop 
+Library from Apache – Pig Latin High Level Languages– Programming the Google App 
+Engine – Google File System (GFS) – Big Table – Google’s NOSQL System 
+Email Communications – Cloud Computing for the Community - Collaborating on 
+Calendars – Schedules and Task Management – Exploring Online Scheduling 
+Applications – Exploring Online Planning and Task Management – Collaborating on 
+Event Management -Word Processing – Databases.  
+Module -5 SECURITY IN THE CLOUD 
+Security Overview – Cloud Security Challenges – Security -as-a Service – Security 
+Governance – Risk Management – Security Monitoring – Security Architecture Design – 
+Data Security – Application Security – Virtual Machine Security 
+Cloud Forensics - Introduction to cloud forensics - Framework -Evidence Source 
+Identification and preservation - Collection of Evidence - Examination and analysis of 
+collected data. 
